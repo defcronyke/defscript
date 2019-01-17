@@ -22,12 +22,12 @@ impl Token {
   }
 
   pub fn string(&self) -> String {
-    match &self.val {
+    match self.val.clone() {
       TokenValue::TokenNumValue(val) => format!("Token({}, {})", self.typ.val(), val.val()),
 
       TokenValue::TokenOpValue(val) => match val.val() {
-        Some(val) => format!("Token({}, {})", self.typ.val(), val),
-        None => format!("Token({}, None)", self.typ.val()),
+        _ => format!("Token({}, {})", self.typ.val(), val.val()),
+        // None => format!("Token({}, None)", self.typ.val()),
       },
     }
   }
@@ -106,10 +106,10 @@ pub enum TokenOpValue {
 }
 
 impl TokenOpValue {
-  pub fn val(&self) -> Option<String> {
+  pub fn val(&self) -> String {
     match *self {
-      TokenOpValue::NoOp => Some(String::from(" ")),
-      TokenOpValue::Plus => Some(String::from("+")),
+      TokenOpValue::NoOp => String::from(" "),
+      TokenOpValue::Plus => String::from("+"),
     }
   }
 }
