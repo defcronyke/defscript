@@ -18,7 +18,7 @@ pub struct Interpreter<'a> {
   pos: usize,
   current_token: Result<Token, String>,
   current_char: char,
-  num: Option<[TokenNumValue; 10]>,
+  num: [TokenNumValue; 10],
   op: HashMap<&'a str, TokenOpValue>,
   last_op: TokenOpValue,
   state: u8, // 0 = number, 1 = operator
@@ -31,7 +31,7 @@ impl<'a> Interpreter<'a> {
       pos: 0,
       current_token: Ok(Token::new_op(Eof, NoOp)),
       current_char: '0',
-      num: Some([Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine]),
+      num: [Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine],
       op: hashmap![
         " " => NoOp,
         "+" => Plus
@@ -65,17 +65,14 @@ impl<'a> Interpreter<'a> {
     if current_char.is_digit(10) {
       // println!("is_digit");
       match current_char.to_digit(10) {
-        Some(digit) => match self.num.clone() {
-          Some(val) => {
-            // println!("to_digit Some(val): {:?}", val[digit as usize]);
-            let token = Token::new_num(Integer, val[digit as usize].clone());
-            // println!("token: {:?}", token);
-            self.pos += 1;
-            self.state = (self.state + 1) % 2;
-            return Ok(token);
-          }
-          None => (),
-        },
+        Some(digit) => {
+          // println!("to_digit Some(val): {:?}", val[digit as usize]);
+          let token = Token::new_num(Integer, self.num.clone()[digit as usize].clone());
+          // println!("token: {:?}", token);
+          self.pos += 1;
+          self.state = (self.state + 1) % 2;
+          return Ok(token);
+        }
         None => {
           return Err(String::from("Error: Failed converting character to number"));
         }
