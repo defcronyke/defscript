@@ -56,7 +56,13 @@ impl<'a> Interpreter<'a> {
     let text = self.text;
     // println!("text: {:?}", text);
 
-    if self.pos > text.chars().count() - 1 {
+    let char_count = text.chars().count();
+
+    if char_count == 0 {
+      return Ok(None);
+    }
+
+    if self.pos > char_count - 1 {
       // println!("EOF");
       return Ok(Some(Token::new_op(Eof, NoOp)));
     }
