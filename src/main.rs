@@ -1,3 +1,4 @@
+extern crate exitcode;
 mod interpreter;
 mod token;
 use interpreter::Interpreter;
@@ -33,7 +34,7 @@ fn main() {
 
       let text = input.trim_end_matches('\n').trim_end_matches('\r');
 
-      if input == "exit" {
+      if text == "exit" {
         break;
       }
 
@@ -56,6 +57,8 @@ fn main() {
         _ => (),
       }
     }
+
+    exit(exitcode::OK)
   } else {
     let query = &args[1];
 
@@ -66,10 +69,14 @@ fn main() {
 
       let res = interpreter.expr().unwrap_or_else(|err| {
         println!("Error executing expression: {}", err);
-        exit(1)
+        exit(exitcode::DATAERR)
       });
 
       println!("{}", res);
+
+      exit(exitcode::OK)
     }
+
+    exit(exitcode::USAGE)
   }
 }
