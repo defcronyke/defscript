@@ -27,7 +27,6 @@ impl Token {
 
       TokenValue::TokenOpValue(val) => match val.val() {
         _ => format!("Token({}, {})", self.typ.val(), val.val()),
-        // None => format!("Token({}, None)", self.typ.val()),
       },
     }
   }
@@ -41,7 +40,6 @@ impl fmt::Display for Token {
 
 #[derive(Clone, Debug)]
 pub enum TokenType {
-  // EmptyString,
   Space,
   Integer,
   Add,
@@ -49,13 +47,12 @@ pub enum TokenType {
 }
 
 impl TokenType {
-  pub fn val(&self) -> String {
+  pub fn val<'a>(&self) -> &'a str {
     match *self {
-      // TokenType::EmptyString => "",
-      TokenType::Space => String::from(" "),
-      TokenType::Integer => String::from("Integer"),
-      TokenType::Add => String::from("Add"),
-      TokenType::Eof => String::from("Eof"),
+      TokenType::Space => " ",
+      TokenType::Integer => "Integer",
+      TokenType::Add => "Add",
+      TokenType::Eof => "Eof",
     }
   }
 }
@@ -68,7 +65,6 @@ pub enum TokenValue {
 
 #[derive(Debug, Clone)]
 pub enum TokenNumValue {
-  // NoNum,
   Zero,
   One,
   Two,
@@ -84,7 +80,6 @@ pub enum TokenNumValue {
 impl TokenNumValue {
   pub fn val(&self) -> u8 {
     match *self {
-      // TokenNumValue::NoNum => None,
       TokenNumValue::Zero => 0,
       TokenNumValue::One => 1,
       TokenNumValue::Two => 2,
@@ -106,10 +101,10 @@ pub enum TokenOpValue {
 }
 
 impl TokenOpValue {
-  pub fn val(&self) -> String {
+  pub fn val<'a>(&self) -> &'a str {
     match *self {
-      TokenOpValue::NoOp => String::from(" "),
-      TokenOpValue::Plus => String::from("+"),
+      TokenOpValue::NoOp => " ",
+      TokenOpValue::Plus => "+",
     }
   }
 }
