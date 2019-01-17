@@ -43,7 +43,6 @@ impl fmt::Display for Token {
 }
 
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 pub enum TokenType {
   Integer,
   Add,
@@ -67,7 +66,6 @@ pub enum TokenValue {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum TokenNumValue {
   NoNum,
   Zero,
@@ -101,7 +99,6 @@ impl TokenNumValue {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum TokenOpValue {
   NoOp,
   Plus,
