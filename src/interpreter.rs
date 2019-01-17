@@ -16,10 +16,10 @@ macro_rules! hashmap {
 pub struct Interpreter<'a> {
   text: &'a str,
   pos: usize,
-  current_token: Result<Token, &'a str>,
+  current_token: Result<Token, String>,
   current_char: char,
   num: Option<[TokenNumValue; 10]>,
-  op: HashMap<String, TokenOpValue>,
+  op: HashMap<&'a str, TokenOpValue>,
   last_op: TokenOpValue,
   state: u8, // 0 = number, 1 = operator
 }
@@ -33,15 +33,15 @@ impl<'a> Interpreter<'a> {
       current_char: '0',
       num: Some([Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine]),
       op: hashmap![
-        String::from(" ") => NoOp,
-        String::from("+") => Plus
+        " " => NoOp,
+        "+" => Plus
       ],
       last_op: NoOp,
       state: 0,
     }
   }
 
-  fn get_next_token(&mut self) -> Result<Token, &'a str> {
+  fn get_next_token(&mut self) -> Result<Token, String> {
     let text = self.text;
     // println!("text: {:?}", text);
     // println!("pos: {}", self.pos);
@@ -77,7 +77,7 @@ impl<'a> Interpreter<'a> {
           None => (),
         },
         None => {
-          return Err("Error: Failed converting character to number");
+          return Err(String::from("Error: Failed converting character to number"));
         }
       }
     }
@@ -95,7 +95,7 @@ impl<'a> Interpreter<'a> {
     }
   }
 
-  fn eat(&mut self, token_type: TokenType) -> Result<(), &'a str> {
+  fn eat(&mut self, token_type: TokenType) -> Result<(), String> {
     match self.current_token.clone() {
       Ok(token) => {
         if token.typ.val() == token_type.val() {
@@ -114,7 +114,7 @@ impl<'a> Interpreter<'a> {
     }
   }
 
-  pub fn expr(&mut self) -> Result<i16, &'a str> {
+  pub fn expr(&mut self) -> Result<i16, String> {
     self.current_token = self.get_next_token();
 
     let left = match self.current_token.clone() {
@@ -187,6 +187,7 @@ impl<'a> Interpreter<'a> {
       TokenValue::TokenNumValue(val) => val.val(),
       _ => 0,
     };
+
     let right = match right.val {
       TokenValue::TokenNumValue(val) => val.val(),
       _ => 0,
@@ -199,7 +200,7 @@ impl<'a> Interpreter<'a> {
       Ok((left + right) as i16)
     } else {
       // println!("last op not equals");
-      Ok((left + right) as i16)
+      Err(String::from("Unknown operator"))
     }
   }
 }
