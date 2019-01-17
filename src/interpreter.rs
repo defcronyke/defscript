@@ -78,12 +78,12 @@ impl<'a> Interpreter<'a> {
               return Ok(token);
             }
             None => {
-              return Err("Error finding digit");
+              return Err("Error: Failed finding digit");
             }
           }
         }
         None => {
-          return Err("Error converting character to number");
+          return Err("Error: Failed converting character to number");
         }
       }
     }
@@ -226,7 +226,7 @@ impl<'a> Interpreter<'a> {
         if self.last_op.val() == Plus.val() {
           Ok((left + right) as i128)
         } else {
-          Err("Error: Unknown operator")
+          Err("Unknown operator")
         }
       }
     }

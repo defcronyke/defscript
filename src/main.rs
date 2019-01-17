@@ -4,6 +4,7 @@ use interpreter::Interpreter;
 use std::env;
 use std::io;
 use std::io::prelude::*;
+use std::process::exit;
 
 fn main() {
   let args: Vec<String> = env::args().collect();
@@ -65,7 +66,7 @@ fn main() {
 
       let res = interpreter.expr().unwrap_or_else(|err| {
         println!("Error executing expression: {}", err);
-        1
+        exit(1)
       });
 
       println!("{}", res);
