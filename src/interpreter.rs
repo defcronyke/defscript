@@ -18,7 +18,7 @@ pub struct Interpreter<'a> {
   pos: usize,
   current_token: Result<Option<Token>, &'a str>,
   current_char: char,
-  num: HashMap<u8, TokenNumValue>,
+  num: Option<[TokenNumValue; 10]>,
   op: HashMap<String, TokenOpValue>,
   last_op: TokenOpValue,
   state: u8, // 0 = number, 1 = operator
@@ -31,21 +31,11 @@ impl<'a> Interpreter<'a> {
       pos: 0,
       current_token: Ok(None),
       current_char: '0',
-      num: hashmap![
-        0 => Zero,
-        1 => One,
-        2 => Two,
-        3 => Three,
-        4 => Four,
-        5 => Five,
-        6 => Six,
-        7 => Seven,
-        8 => Eight,
-        9 => Nine
-      ],
+      num: Some([Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine]),
       op: hashmap![
-        String::from("+") => Plus,
-        String::from(" ") => NoOp
+        // "" => NoOp,
+        String::from(" ") => NoOp,
+        String::from("+") => Plus
       ],
       last_op: NoOp,
       state: 0,
@@ -54,102 +44,135 @@ impl<'a> Interpreter<'a> {
 
   fn get_next_token(&mut self) -> Result<Option<Token>, &'a str> {
     let text = self.text;
-    // println!("text: {:?}", text);
+    println!("text: {:?}", text);
+    println!("pos: {}", self.pos);
 
     let char_count = text.chars().count();
 
     if char_count == 0 {
-      return Ok(None);
-    }
-
-    if self.pos > char_count - 1 {
-      // println!("EOF");
+      println!("EOF 1");
       return Ok(Some(Token::new_op(Eof, NoOp)));
     }
 
+    if self.pos > char_count - 1 {
+      println!("EOF 2");
+
+      self.state = (self.state + 1) % 2;
+      let current_char = text.chars().nth(self.pos - 1).unwrap();
+
+      if current_char.is_digit(10) {
+        let val = current_char.to_digit(10).unwrap();
+        return Ok(Some(Token::new_num(
+          Integer,
+          self.num.clone().unwrap()[val as usize].clone(),
+        )));
+      }
+      // return Ok(Some(Token::new_op(Eof, NoOp)));
+    }
+
     let current_char = text.chars().nth(self.pos).unwrap();
+    println!("current_char: {:?}", current_char.to_string());
 
     if current_char.is_digit(10) {
-      // println!("is_digit");
+      println!("is_digit");
       match current_char.to_digit(10) {
-        Some(val) => {
-          let val: Option<&TokenNumValue> = self.num.get(&(val as u8));
-          // println!("to_digit Some(val): {:?}", val);
-          match val {
-            Some(val) => {
-              // println!("num get val: {:?}", val);
-              let token = Some(Token::new_num(Integer, val.clone()));
-              // println!("token: {:?}", token);
-              self.pos += 1;
-              return Ok(token);
-            }
-            None => {
-              return Err("Error: Failed finding digit");
-            }
+        Some(digit) => match self.num.clone() {
+          Some(val) => {
+            println!("to_digit Some(val): {:?}", val[digit as usize]);
+            let token = Some(Token::new_num(Integer, val[digit as usize].clone()));
+            println!("token: {:?}", token);
+            self.pos += 1;
+            self.state = (self.state + 1) % 2;
+            return Ok(token);
           }
-        }
+          None => {
+            println!("to_digit None");
+            // self.pos += 1;
+          }
+        },
         None => {
           return Err("Error: Failed converting character to number");
         }
       }
     }
-    // println!("current_char: {:?}", current_char.to_string());
-    // println!("plus: {:?}", String::from(Plus.val().unwrap()));
 
-    if current_char.to_string() == Plus.val().unwrap() {
-      // println!("plus equals");
-      let token = Some(Token::new_op(
-        Add,
-        self.op.get(&current_char.to_string()).unwrap().clone(),
-      ));
-      self.last_op = Plus;
-      self.pos += 1;
-      return Ok(token);
-    } else {
-      self.pos += 1;
-      return Ok(Some(Token::new_op(Add, NoOp)));
+    match Plus.val() {
+      Some(val) => {
+        if current_char.to_string() == val {
+          println!("plus equals");
+          let token = Some(Token::new_op(Add, self.op.get(&val).unwrap().clone()));
+          self.last_op = Plus;
+          self.pos += 1;
+          // self.state = (self.state + 1) % 2;
+          return Ok(token);
+        } else {
+          println!("plus not equals");
+          self.pos += 1;
+          return Ok(Some(Token::new_op(Space, NoOp)));
+          // return Ok(Some(Token::new_op(Space, NoOp)));
+        }
+      }
+      None => {
+        println!("plus none");
+        // self.pos += 1;
+        return Ok(Some(Token::new_op(Space, NoOp)));
+        // return Ok(Some(Token::new_op(Space, NoOp)));
+      }
     }
   }
 
-  fn eat(&mut self, token_type: TokenType) -> Result<Option<i128>, &'a str> {
+  fn eat(&mut self, token_type: TokenType) -> Result<Option<i16>, &'a str> {
     match self.current_token.clone() {
       Ok(token) => match token {
         Some(token) => {
-          if token.typ.val() == token_type.val() {
-            // println!("token types are the same");
+          if *token.typ.val() == *token_type.val() {
             self.current_token = self.get_next_token();
+            // self.state = (self.state + 1) % 2;
+
+            println!("token types are the same: state: {}", self.state);
+            println!("current_token: {:?}", self.current_token);
             Ok(None)
           } else {
-            // println!("token types are different");
-            self.state += 1 % 2;
+            // self.pos -= 1;
+            // if token.typ.val() != Eof.val() {
+            self.current_token = self.get_next_token();
+            // }
+            // self.state = (self.state + 1) % 2;
+
+            println!("token types are different: state: {}", self.state);
+            println!("current_token: {:?}", self.current_token);
             Ok(None)
           }
         }
 
-        None => Ok(None),
+        None => {
+          // self.current_token = self.get_next_token();
+          // self.state = (self.state + 1) % 2;
+          println!("token type is none: state: {}", self.state);
+          Ok(None)
+        }
       },
 
       Err(err) => Err(err),
     }
   }
 
-  pub fn expr(&mut self) -> Result<i128, &str> {
+  pub fn expr(&mut self) -> Result<i16, &'a str> {
     {
       self.current_token = self.get_next_token();
     }
 
     let left = match self.current_token.clone() {
-      Ok(val) => match val {
-        Some(val) => match val.val {
-          TokenValue::TokenNumValue(val) => val,
+      Ok(token) => match token {
+        Some(token) => match token.clone().val {
+          TokenValue::TokenNumValue(_) => Some(token),
 
           TokenValue::TokenOpValue(val) => match val {
-            TokenOpValue::Plus => NoNum,
-            TokenOpValue::NoOp => NoNum,
+            _ => Some(Token::new_num(Integer, Zero)),
           },
         },
 
-        None => NoNum,
+        None => None,
       },
 
       Err(err) => {
@@ -159,25 +182,33 @@ impl<'a> Interpreter<'a> {
 
     {
       loop {
-        if self.state == 0 {
-          self.eat(Integer)?;
-        } else {
-          break;
+        match left.clone() {
+          Some(val) => {
+            self.eat(val.typ)?;
+
+            if self.state == 1 {
+              break;
+            }
+          }
+          None => {
+            break;
+            // self.state = (self.state + 1) % 2;
+          }
         }
       }
     }
 
     let op = match self.current_token.clone() {
       Ok(token) => match token {
-        Some(token) => match token.clone().val {
-          TokenValue::TokenOpValue(_) => token,
+        Some(token) => match token.val {
+          TokenValue::TokenOpValue(_) => Some(token),
 
           TokenValue::TokenNumValue(val) => match val {
-            _ => token,
+            _ => Some(Token::new_op(Space, NoOp)),
           },
         },
 
-        None => Token::new_num(Integer, NoNum),
+        None => None,
       },
 
       Err(err) => {
@@ -187,26 +218,32 @@ impl<'a> Interpreter<'a> {
 
     {
       loop {
-        if self.state == 1 {
-          self.eat(Add)?;
-        } else {
-          break;
+        match op.clone() {
+          Some(val) => {
+            self.eat(val.typ)?;
+            if self.state == 0 {
+              break;
+            }
+          }
+          None => {
+            break;
+            // self.state = (self.state + 1) % 2;
+          }
         }
       }
     }
 
     let right = match self.current_token.clone() {
-      Ok(val) => match val {
-        Some(val) => match val.val {
-          TokenValue::TokenNumValue(val) => val,
+      Ok(token) => match token {
+        Some(token) => match token.clone().val {
+          TokenValue::TokenNumValue(_) => Some(token),
 
           TokenValue::TokenOpValue(val) => match val {
-            TokenOpValue::Plus => NoNum,
-            TokenOpValue::NoOp => NoNum,
+            _ => Some(Token::new_num(Integer, Zero)),
           },
         },
 
-        None => NoNum,
+        None => None,
       },
 
       Err(err) => {
@@ -216,23 +253,41 @@ impl<'a> Interpreter<'a> {
 
     {
       loop {
-        if self.state == 0 {
-          self.eat(Integer)?;
-        } else {
-          break;
+        match right.clone() {
+          Some(val) => {
+            self.eat(val.typ)?;
+
+            if self.state == 1 {
+              break;
+            }
+          }
+          None => {
+            break;
+            // self.state = (self.state + 1) % 2;
+          }
         }
       }
     }
 
-    let left = left.val().unwrap_or(0);
-    let right = right.val().unwrap_or(0);
+    let left = match left.unwrap_or(Token::new_num(Integer, Zero)).val {
+      TokenValue::TokenNumValue(val) => val.val(),
+      _ => 0,
+    };
+    let right = match right.unwrap_or(Token::new_num(Integer, Zero)).val {
+      TokenValue::TokenNumValue(val) => val.val(),
+      _ => 0,
+    };
+    println!("left: {}", left);
+    println!("right: {}", right);
 
-    match op.typ {
+    match op.unwrap_or(Token::new_op(Space, NoOp)).typ {
       _ => {
-        if self.last_op.val() == Plus.val() {
-          Ok((left + right) as i128)
+        if self.last_op.val().unwrap_or(Space.val()) == Plus.val().unwrap_or(Space.val()) {
+          println!("last op equals");
+          Ok((left + right) as i16)
         } else {
-          Err("Unknown operator")
+          println!("last op not equals");
+          Ok((left + right) as i16)
         }
       }
     }
