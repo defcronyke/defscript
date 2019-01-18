@@ -112,7 +112,7 @@ impl<'a> Interpreter<'a> {
   }
 
   pub fn expr(&mut self) -> Result<i16, String> {
-    self.current_token = self.get_next_token();
+    self.eat(Eof)?;
 
     let left = match self.current_token.clone() {
       Ok(token) => match token.val {
