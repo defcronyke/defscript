@@ -2,10 +2,38 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "cargo build",
+      "label": "cargo build msvc",
+      "command": "rustup",
+      "args": [
+        "run",
+        "nightly-x86_64-pc-windows-msvc",
+        "cargo",
+        "build"
+      ],
+      "type": "shell",
+      // "dependsOn": [
+      //   "cargo clean"
+      // ]
+    },
+    {
+      "label": "cargo build gnu",
+      "command": "rustup",
+      "args": [
+        "run",
+        "nightly-x86_64-pc-windows-gnu",
+        "cargo",
+        "build"
+      ],
+      "type": "shell",
+      // "dependsOn": [
+      //   "cargo clean"
+      // ]
+    },
+    {
+      "label": "cargo clean",
       "command": "cargo",
       "args": [
-        "build"
+        "clean"
       ],
       "type": "shell"
     }

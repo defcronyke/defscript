@@ -2,16 +2,38 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "(Windows) Launch",
+      "name": "(Windows MSVC) Launch",
       "type": "cppvsdbg",
       "request": "launch",
-      "preLaunchTask": "cargo build",
+      "preLaunchTask": "cargo build msvc",
       "program": "${workspaceFolder}/target/debug/defscript.exe",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
       "externalConsole": true
+    },
+    {
+      "name": "(GDB) Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "preLaunchTask": "cargo build gnu",
+      "program": "${workspaceFolder}/target/debug/defscript.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "externalConsole": true,
+      "linux": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "/usr/bin/gdb"
+      },
+      "osx": {
+        "MIMode": "lldb"
+      },
+      "windows": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "C:\\msys64\\mingw64\\bin\\gdb.exe"
+      }
     }
   ]
 }
