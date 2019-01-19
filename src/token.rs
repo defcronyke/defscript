@@ -1,3 +1,4 @@
+use std::cmp::PartialEq;
 use std::fmt;
 
 #[derive(Clone, Debug)]
@@ -23,11 +24,9 @@ impl Token {
 
   pub fn string(&self) -> String {
     match self.val.clone() {
-      TokenValue::TokenNumValue(val) => format!("Token({}, {})", self.typ.val(), val.val()),
+      TokenValue::TokenNumValue(val) => format!("Token({}, {})", self.typ.val(), val),
 
-      TokenValue::TokenOpValue(val) => match val.val() {
-        _ => format!("Token({}, {})", self.typ.val(), val.val()),
-      },
+      TokenValue::TokenOpValue(val) => format!("Token({}, {})", self.typ.val(), val.val()),
     }
   }
 }
@@ -40,20 +39,32 @@ impl fmt::Display for Token {
 
 #[derive(Clone, Debug)]
 pub enum TokenType {
-  Space,
   Integer,
   Add,
+  Subtract,
   Eof,
 }
 
 impl TokenType {
   pub fn val<'a>(&self) -> &'a str {
     match *self {
-      TokenType::Space => " ",
       TokenType::Integer => "Integer",
       TokenType::Add => "Add",
+      TokenType::Subtract => "Subtract",
       TokenType::Eof => "Eof",
     }
+  }
+}
+
+impl fmt::Display for TokenType {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{}", self.val())
+  }
+}
+
+impl PartialEq for TokenType {
+  fn eq(&self, other: &TokenType) -> bool {
+    self.val() == other.val()
   }
 }
 
@@ -63,48 +74,27 @@ pub enum TokenValue {
   TokenOpValue(TokenOpValue),
 }
 
-#[derive(Debug, Clone)]
-pub enum TokenNumValue {
-  Zero,
-  One,
-  Two,
-  Three,
-  Four,
-  Five,
-  Six,
-  Seven,
-  Eight,
-  Nine,
-}
-
-impl TokenNumValue {
-  pub fn val(&self) -> u8 {
-    match *self {
-      TokenNumValue::Zero => 0,
-      TokenNumValue::One => 1,
-      TokenNumValue::Two => 2,
-      TokenNumValue::Three => 3,
-      TokenNumValue::Four => 4,
-      TokenNumValue::Five => 5,
-      TokenNumValue::Six => 6,
-      TokenNumValue::Seven => 7,
-      TokenNumValue::Eight => 8,
-      TokenNumValue::Nine => 9,
-    }
-  }
-}
+pub type TokenNumValue = i64;
 
 #[derive(Debug, Clone)]
 pub enum TokenOpValue {
   NoOp,
   Plus,
+  Minus,
 }
 
 impl TokenOpValue {
   pub fn val<'a>(&self) -> &'a str {
     match *self {
-      TokenOpValue::NoOp => " ",
+      TokenOpValue::NoOp => "",
       TokenOpValue::Plus => "+",
+      TokenOpValue::Minus => "-",
     }
+  }
+}
+
+impl PartialEq for TokenOpValue {
+  fn eq(&self, other: &TokenOpValue) -> bool {
+    self.val() == other.val()
   }
 }

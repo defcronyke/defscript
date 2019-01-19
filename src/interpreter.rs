@@ -1,203 +1,170 @@
 use crate::token::{Token, TokenNumValue, TokenOpValue, TokenType, TokenValue};
-use std::collections::HashMap;
-use TokenNumValue::*;
 use TokenOpValue::*;
 use TokenType::*;
-
-macro_rules! hashmap {
-  ($( $key: expr => $val: expr ),*) => {{
-    let mut map = HashMap::new();
-    $( map.insert($key, $val); )*
-    map
-  }}
-}
 
 #[derive(Clone)]
 pub struct Interpreter<'a> {
   text: &'a str,
   pos: usize,
-  current_token: Result<Token, String>,
-  current_char: char,
-  num: [TokenNumValue; 10],
-  op: HashMap<&'a str, TokenOpValue>,
-  last_op: TokenOpValue,
-  state: u8, // 0 = number, 1 = operator
+  current_token: Option<Token>,
+  current_char: Option<char>,
 }
 
 impl<'a> Interpreter<'a> {
   pub fn new(text: &'a str) -> Self {
     Self {
-      text: text,
+      text,
       pos: 0,
-      current_token: Ok(Token::new_op(Eof, NoOp)),
-      current_char: '0',
-      num: [Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine],
-      op: hashmap![
-        " " => NoOp,
-        "+" => Plus
-      ],
-      last_op: NoOp,
-      state: 0,
+      current_token: None,
+      current_char: Some(text.chars().nth(0).unwrap()),
     }
   }
 
-  fn get_next_token(&mut self) -> Result<Token, String> {
-    let text = self.text;
-    // println!("text: {:?}", text);
-    // println!("pos: {}", self.pos);
+  // Parser
+  pub fn expr(&mut self) -> Result<TokenNumValue, String> {
+    self.current_token = self.get_next_token()?;
 
-    let char_count = text.chars().count();
+    let left = self.current_token.clone().unwrap();
+    self.eat(Integer)?;
 
-    if char_count == 0 {
-      // println!("EOF 1");
-      return Ok(Token::new_op(Eof, NoOp));
+    let op = self.current_token.clone().unwrap();
+    if op.typ == Add {
+      self.eat(Add)?;
+    } else if op.typ == Subtract {
+      self.eat(Subtract)?;
+    } else {
+      return Err("Unknown operator type".into());
     }
 
-    if self.pos > char_count - 1 {
-      // println!("EOF 2");
-      self.state = (self.state + 1) % 2;
-      return Ok(Token::new_op(Eof, NoOp));
+    let right = self.current_token.clone().unwrap();
+    self.eat(Integer)?;
+
+    if op.typ == Add {
+      let left = match left.val {
+        TokenValue::TokenNumValue(num) => num,
+        _ => 0,
+      };
+
+      let right = match right.val {
+        TokenValue::TokenNumValue(num) => num,
+        _ => 0,
+      };
+
+      Ok(left + right)
+    } else if op.typ == Subtract {
+      let left = match left.val {
+        TokenValue::TokenNumValue(num) => num,
+        _ => 0,
+      };
+
+      let right = match right.val {
+        TokenValue::TokenNumValue(num) => num,
+        _ => 0,
+      };
+
+      Ok(left - right)
+    } else {
+      Err("Unknown operator".into())
     }
+  }
 
-    let current_char = text.chars().nth(self.pos).unwrap();
-    // println!("current_char: {:?}", current_char.to_string());
+  fn advance(&mut self) {
+    self.pos += 1;
 
-    if current_char.is_digit(10) {
-      // println!("is_digit");
-      match current_char.to_digit(10) {
-        Some(digit) => {
-          // println!("to_digit Some(val): {:?}", val[digit as usize]);
-          let token = Token::new_num(Integer, self.num.clone()[digit as usize].clone());
-          // println!("token: {:?}", token);
-          self.pos += 1;
-          self.state = (self.state + 1) % 2;
-          return Ok(token);
+    if self.pos > self.text.chars().count() - 1 {
+      self.current_char = None;
+    } else {
+      self.current_char = Some(self.text.chars().nth(self.pos).unwrap());
+    }
+  }
+
+  fn skip_whitespace(&mut self) {
+    loop {
+      match self.current_char {
+        Some(current_char) => {
+          if current_char.is_whitespace() {
+            self.advance();
+          } else {
+            break;
+          }
         }
-        None => {
-          return Err(String::from("Error: Failed converting character to number"));
+        _ => (),
+      }
+    }
+  }
+
+  fn integer(&mut self) -> Result<TokenNumValue, String> {
+    let mut res = String::new();
+    loop {
+      match self.current_char {
+        Some(current_char) => {
+          if current_char.is_digit(10) {
+            res.push(current_char);
+            self.advance();
+          } else {
+            break;
+          }
         }
+        None => break,
       }
     }
 
-    if current_char.to_string() == Plus.val() {
-      // println!("plus equals");
-      let token = Token::new_op(Add, self.op.get::<str>(&Plus.val()).unwrap().clone());
-      self.last_op = Plus;
-      self.pos += 1;
-      return Ok(token);
-    } else {
-      // println!("plus not equals");
-      self.pos += 1;
-      return Ok(Token::new_op(Space, NoOp));
+    match res.parse::<TokenNumValue>() {
+      Ok(res) => Ok(res),
+      Err(err) => Err(format!("Failed parsing integer: {}", err)),
     }
   }
 
   fn eat(&mut self, token_type: TokenType) -> Result<(), String> {
     match self.current_token.clone() {
-      Ok(token) => {
-        if token.typ.val() == token_type.val() {
-          self.current_token = self.get_next_token();
-          // println!("token types are the same: state: {}", self.state);
-          // println!("current_token: {:?}", self.current_token);
-          Ok(())
+      Some(current_token) => {
+        if current_token.typ == token_type {
+          self.current_token = self.get_next_token().unwrap();
         } else {
-          self.current_token = self.get_next_token();
-          // println!("token types are different: state: {}", self.state);
-          // println!("current_token: {:?}", self.current_token);
-          Ok(())
+          return Err(format!("Failed eating token: Current token type does not match token type requested to be eaten: {} {}", current_token.typ, token_type));
         }
       }
-      Err(err) => Err(err),
+      None => println!("Failed eating token: No current token"),
     }
+
+    Ok(())
   }
 
-  pub fn expr(&mut self) -> Result<i16, String> {
-    self.eat(Eof)?;
-
-    let left = match self.current_token.clone() {
-      Ok(token) => match token.val {
-        TokenValue::TokenNumValue(_) => token,
-
-        TokenValue::TokenOpValue(val) => match val {
-          _ => Token::new_num(Integer, Zero),
-        },
-      },
-
-      Err(err) => {
-        return Err(err);
-      }
-    };
-
+  // Lexical analyzer
+  fn get_next_token(&mut self) -> Result<Option<Token>, String> {
     loop {
-      self.eat(left.typ.clone())?;
+      match self.current_char {
+        Some(current_char) => {
+          if current_char.is_whitespace() {
+            self.skip_whitespace();
+            continue;
+          }
 
-      if self.state == 1 {
-        break;
+          if current_char.is_digit(10) {
+            match self.integer() {
+              Ok(num) => {
+                return Ok(Some(Token::new_num(Integer, num)));
+              }
+              Err(err) => println!("Failed getting integer: {}", err),
+            }
+          }
+
+          if current_char.to_string() == Plus.val() {
+            self.advance();
+            return Ok(Some(Token::new_op(Add, Plus)));
+          }
+
+          if current_char.to_string() == Minus.val() {
+            self.advance();
+            return Ok(Some(Token::new_op(Subtract, Minus)));
+          }
+
+          return Err("Failed getting next token".into());
+        }
+        None => {
+          return Ok(Some(Token::new_op(Eof, NoOp)));
+        }
       }
-    }
-
-    let op = match self.current_token.clone() {
-      Ok(token) => match token.val {
-        TokenValue::TokenOpValue(_) => token,
-
-        TokenValue::TokenNumValue(val) => match val {
-          _ => Token::new_op(Space, NoOp),
-        },
-      },
-
-      Err(err) => {
-        return Err(err);
-      }
-    };
-
-    loop {
-      self.eat(op.typ.clone())?;
-
-      if self.state == 0 {
-        break;
-      }
-    }
-
-    let right = match self.current_token.clone() {
-      Ok(token) => match token.val {
-        TokenValue::TokenNumValue(_) => token,
-
-        TokenValue::TokenOpValue(val) => match val {
-          _ => Token::new_num(Integer, Zero),
-        },
-      },
-
-      Err(err) => {
-        return Err(err);
-      }
-    };
-
-    loop {
-      self.eat(right.typ.clone())?;
-
-      if self.state == 1 {
-        break;
-      }
-    }
-
-    let left = match left.val {
-      TokenValue::TokenNumValue(val) => val.val(),
-      _ => 0,
-    };
-
-    let right = match right.val {
-      TokenValue::TokenNumValue(val) => val.val(),
-      _ => 0,
-    };
-    // println!("left: {}", left);
-    // println!("right: {}", right);
-
-    if self.last_op.val() == Plus.val() {
-      // println!("last op equals");
-      Ok((left + right) as i16)
-    } else {
-      // println!("last op not equals");
-      Err(String::from("Unknown operator"))
     }
   }
 }
