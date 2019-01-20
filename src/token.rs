@@ -42,6 +42,8 @@ pub enum TokenType {
   Integer,
   Add,
   Subtract,
+  Multiply,
+  Divide,
   Eof,
 }
 
@@ -51,6 +53,8 @@ impl TokenType {
       TokenType::Integer => "Integer",
       TokenType::Add => "Add",
       TokenType::Subtract => "Subtract",
+      TokenType::Multiply => "Multiply",
+      TokenType::Divide => "Divide",
       TokenType::Eof => "Eof",
     }
   }
@@ -81,6 +85,8 @@ pub enum TokenOpValue {
   NoOp,
   Plus,
   Minus,
+  Asterisk,
+  Slash,
 }
 
 impl TokenOpValue {
@@ -89,6 +95,8 @@ impl TokenOpValue {
       TokenOpValue::NoOp => "",
       TokenOpValue::Plus => "+",
       TokenOpValue::Minus => "-",
+      TokenOpValue::Asterisk => "*",
+      TokenOpValue::Slash => "/",
     }
   }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "defscript"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Jeremy Carter <Jeremy@JeremyCarter.ca>"]
 edition = "2018"
 

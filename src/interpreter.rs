@@ -2,6 +2,8 @@ use crate::token::{Token, TokenNumValue, TokenOpValue, TokenType, TokenValue};
 use TokenOpValue::*;
 use TokenType::*;
 
+pub type ExprResult = f64;
+
 #[derive(Clone)]
 pub struct Interpreter<'a> {
   text: &'a str,
@@ -21,50 +23,82 @@ impl<'a> Interpreter<'a> {
   }
 
   // Parser
-  pub fn expr(&mut self) -> Result<TokenNumValue, String> {
+  pub fn expr(&mut self) -> Result<ExprResult, String> {
     self.current_token = self.get_next_token()?;
 
     let left = self.current_token.clone().unwrap();
     self.eat(Integer)?;
 
     let op = self.current_token.clone().unwrap();
-    if op.typ == Add {
-      self.eat(Add)?;
-    } else if op.typ == Subtract {
-      self.eat(Subtract)?;
-    } else {
-      return Err("Unknown operator type".into());
+    match op.typ {
+      Add => self.eat(Add)?,
+      Subtract => self.eat(Subtract)?,
+      Multiply => self.eat(Multiply)?,
+      Divide => self.eat(Divide)?,
+      _ => return Err("Unknown operator type".into()),
     }
 
     let right = self.current_token.clone().unwrap();
     self.eat(Integer)?;
 
-    if op.typ == Add {
-      let left = match left.val {
-        TokenValue::TokenNumValue(num) => num,
-        _ => 0,
-      };
+    match op.typ {
+      Add => {
+        let left = match left.val {
+          TokenValue::TokenNumValue(num) => num,
+          _ => 0,
+        };
 
-      let right = match right.val {
-        TokenValue::TokenNumValue(num) => num,
-        _ => 0,
-      };
+        let right = match right.val {
+          TokenValue::TokenNumValue(num) => num,
+          _ => 0,
+        };
 
-      Ok(left + right)
-    } else if op.typ == Subtract {
-      let left = match left.val {
-        TokenValue::TokenNumValue(num) => num,
-        _ => 0,
-      };
+        return Ok((left + right) as ExprResult);
+      }
 
-      let right = match right.val {
-        TokenValue::TokenNumValue(num) => num,
-        _ => 0,
-      };
+      Subtract => {
+        let left = match left.val {
+          TokenValue::TokenNumValue(num) => num,
+          _ => 0,
+        };
 
-      Ok(left - right)
-    } else {
-      Err("Unknown operator".into())
+        let right = match right.val {
+          TokenValue::TokenNumValue(num) => num,
+          _ => 0,
+        };
+
+        return Ok((left - right) as ExprResult);
+      }
+
+      Multiply => {
+        let left = match left.val {
+          TokenValue::TokenNumValue(num) => num,
+          _ => 0,
+        };
+
+        let right = match right.val {
+          TokenValue::TokenNumValue(num) => num,
+          _ => 0,
+        };
+
+        return Ok((left * right) as ExprResult);
+      }
+
+      Divide => {
+        let left = match left.val {
+          TokenValue::TokenNumValue(num) => num,
+          _ => 0,
+        };
+
+        let right = match right.val {
+          TokenValue::TokenNumValue(num) => num,
+          _ => 0,
+        };
+
+        return Ok(left as ExprResult / right as ExprResult);
+      }
+
+      _ => return Err("Unknown operator".into()),
     }
   }
 
@@ -149,14 +183,26 @@ impl<'a> Interpreter<'a> {
             }
           }
 
-          if current_char.to_string() == Plus.val() {
+          let current_char = current_char.to_string();
+
+          if current_char == Plus.val() {
             self.advance();
             return Ok(Some(Token::new_op(Add, Plus)));
           }
 
-          if current_char.to_string() == Minus.val() {
+          if current_char == Minus.val() {
             self.advance();
             return Ok(Some(Token::new_op(Subtract, Minus)));
+          }
+
+          if current_char == Asterisk.val() {
+            self.advance();
+            return Ok(Some(Token::new_op(Multiply, Asterisk)));
+          }
+
+          if current_char == Slash.val() {
+            self.advance();
+            return Ok(Some(Token::new_op(Divide, Slash)));
           }
 
           return Err("Failed getting next token".into());

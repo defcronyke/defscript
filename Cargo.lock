@@ -10,7 +10,7 @@ dependencies = [
 
 [[package]]
 name = "defscript"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "atty 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "exitcode 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -3,7 +3,7 @@ extern crate exitcode;
 use atty::Stream::Stdin;
 mod interpreter;
 mod token;
-use interpreter::Interpreter;
+use interpreter::{ExprResult, Interpreter};
 use std::env;
 use std::io;
 use std::io::prelude::*;
@@ -48,7 +48,7 @@ fn main() {
       let res = interpreter.expr().unwrap_or_else(|err| {
         println!("Error executing expression: {}", err);
         cont = true;
-        1
+        0 as ExprResult
       });
 
       if cont {
